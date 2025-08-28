@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17.6
+    container_name: mlflow-postgres
+    environment:
+      POSTGRES_DB: mlflow
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - /data/data1/mlflow/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow -d mlflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:2.22.2
+    container_name: mlflow-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://mlflow:change-me@postgres:5432/mlflow
+      --artifacts-destination file:/mlflow/artifacts
+      --gunicorn-opts "--workers 4 --timeout 120"
+    ports:
+      - "5000:5000"
+    volumes:
+      - /data/data1/mlflow/artifacts:/mlflow/artifacts
+    restart: unless-stopped
