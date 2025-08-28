@@ -16,21 +16,27 @@ services:
     restart: unless-stopped
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.22.2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mlflow-with-psycopg2:2.22.2
     container_name: mlflow-server
     depends_on:
       postgres:
         condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      set -e;
-      python -m pip install --no-cache-dir "psycopg2-binary>=2.9,<3";
-      exec mlflow server
-      --host 0.0.0.0
-      --port 5000
-      --backend-store-uri postgresql://mlflow:change-me@postgres:5432/mlflow
-      --artifacts-destination file:/mlflow/artifacts
-      --gunicorn-opts "--workers 4 --timeout 120"
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --backend-store-uri
+      - postgresql://mlflow:change-me@postgres:5432/mlflow
+      - --artifacts-destination
+      - file:/mlflow/artifacts
+      - --gunicorn-opts
+      - --workers 4 --timeout 120
     ports:
       - "5000:5000"
     volumes:
